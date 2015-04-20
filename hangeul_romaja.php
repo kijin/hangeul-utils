@@ -35,6 +35,7 @@ class Hangeul_Romaja
     const TYPE_DEFAULT = 0;
     const TYPE_NAME = 1;
     const TYPE_ADDRESS = 2;
+		const TYPE_ADDRESS_NUMBERING = 4;
     const CAPITALIZE_NONE = 0;
     const CAPITALIZE_FIRST = 1;
     const CAPITALIZE_WORDS = 2;
@@ -76,13 +77,16 @@ class Hangeul_Romaja
         
         // 주소인 경우 별도 처리.
         
-        if ($type === self::TYPE_ADDRESS)
+        if ($type === self::TYPE_ADDRESS || $type === self::TYPE_ADDRESS_NUMBERING)
         {
             $str = implode(', ', array_reverse(preg_split('/\s+/', $str)));
-            $str = preg_replace('/([동리])([0-9]+)가/u', '$1 $2가', $str);
-            $str = preg_replace('/([0-9]+)가([0-9]+)동/u', ' $1가 $2동', $str);
+	          if($type === self::TYPE_ADDRESS_NUMBERING) {
+		          $str = preg_replace_callback('/([가-힣])(\d+)([가-힣])/u', array(__CLASS__, 'conv_number'), $str);
+	          } else {
+		          $str = preg_replace('/([가-힣])(\d+)([가-힣])/u', '$1 $2$3', $str);
+	          }
+
             $str = preg_replace_callback('/([0-9]+)?([시도군구읍면동리로길가])(?=$|,|\s)/u', array(__CLASS__, 'conv_address'), $str);
-            $str = preg_replace('/([문산])로 ([0-9]+)-ga/u', '$1노 $2-ga', $str);
             $capitalize = self::CAPITALIZE_WORDS;
         }
         
@@ -177,6 +181,29 @@ class Hangeul_Romaja
         
         return $result;
     }
+
+		// 주소 중간 수를 하나 띄고 괄호 한글을 넣는다.
+		private static $num = array('', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'),
+			$cardinal = array('', '십', '백', '천');
+
+		public static function toCardinal($n) {
+			$n .= '';
+			$l = strlen($n);
+			if($l > 80) return '무한';
+			$r = array();
+			for($i = 0; $i < $l - 1; $i ++) {
+				if($n[$i] > '1') $r[] = self::$num[$n[$i]];
+				$d = $l - $i - 1;
+				if($n[$i] != '0') $r[] = self::$cardinal[$d % 4];
+			}
+			$r[] = self::$num[$n[$l - 1]];
+			return implode($r);
+		}
+
+		protected static function conv_number($matches) {
+			return $matches[1].' '.$matches[2].'('.self::toCardinal($matches[2]).')'.$matches[3];
+		}
+
     
     // 주소를 처리한다.
     
@@ -205,7 +232,7 @@ class Hangeul_Romaja
                 intval(array_search(substr($resultkey, 3, 3), self::$ordmap1)),
             );
         }
-        elseif ($type !== self::TYPE_ADDRESS && isset(self::$transforms_non_address[$key]))
+        elseif ($type !== self::TYPE_ADDRESS && $type !== self::TYPE_ADDRESS_NUMBERING && isset(self::$transforms_non_address[$key]))
         {
             $resultkey = str_replace('  ', '   ', self::$transforms_non_address[$key]);
             $result = array(
