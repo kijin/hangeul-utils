@@ -81,8 +81,10 @@ class Hangeul_Romaja
             $str = implode(', ', array_reverse(preg_split('/\s+/', $str)));
             $str = preg_replace('/([동리])([0-9]+)가/u', '$1 $2가', $str);
             $str = preg_replace('/([0-9]+)가([0-9]+)동/u', ' $1가 $2동', $str);
+            $str = preg_replace('/\b(.+[로길])(.+길)\b/u', '$1 $2', $str);
             $str = preg_replace_callback('/([0-9]+)?([시도군구읍면동리로길가])(?=$|,|\s)/u', array(__CLASS__, 'conv_address'), $str);
             $str = preg_replace('/([문산])로 ([0-9]+)-ga/u', '$1노 $2-ga', $str);
+            $str = trim($str);
             $capitalize = self::CAPITALIZE_WORDS;
         }
         
