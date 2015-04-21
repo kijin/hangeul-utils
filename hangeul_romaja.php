@@ -35,13 +35,14 @@ class Hangeul_Romaja
     const TYPE_DEFAULT = 0;
     const TYPE_NAME = 1;
     const TYPE_ADDRESS = 2;
-    const CAPITALIZE_NONE = 0;
-    const CAPITALIZE_FIRST = 1;
-    const CAPITALIZE_WORDS = 2;
+    const CAPITALIZE_NONE = 4;
+    const CAPITALIZE_FIRST = 8;
+    const CAPITALIZE_WORDS = 16;
+    const SPELL_NUMBERS = 32;
     
     // 주어진 한글 단어 또는 문장을 로마자로 변환한다.
     
-    public static function convert($str, $type = 0, $capitalize = 0)
+    public static function convert($str, $type = 0, $options = 0)
     {
         // 빈 문자열은 처리하지 않는다.
         
@@ -71,7 +72,7 @@ class Hangeul_Romaja
                 $firstname = mb_substr($str, 1, null, 'UTF-8');
             }
             $str = $surname . ' ' . $firstname;
-            $capitalize = self::CAPITALIZE_WORDS;
+            $options |= self::CAPITALIZE_WORDS;
         }
         
         // 주소인 경우 별도 처리.
@@ -85,7 +86,7 @@ class Hangeul_Romaja
             $str = preg_replace_callback('/([0-9]+)?([시도군구읍면동리로길가])(?=$|,|\s)/u', array(__CLASS__, 'conv_address'), $str);
             $str = preg_replace('/([문산])로 ([0-9]+)-ga/u', '$1노 $2-ga', $str);
             $str = trim($str);
-            $capitalize = self::CAPITALIZE_WORDS;
+            $options |= self::CAPITALIZE_WORDS;
         }
         
         // 문자열을 한 글자씩 자른다.
@@ -163,16 +164,13 @@ class Hangeul_Romaja
         
         // 대문자 처리를 거친다.
         
-        switch ($capitalize)
+        if ($options & self::CAPITALIZE_WORDS)
         {
-            case self::CAPITALIZE_WORDS:
-                $result = implode(' ', array_map('ucfirst', explode(' ', $result)));
-                break;
-            case self::CAPITALIZE_FIRST:
-                $result = ucfirst($result);
-                break;
-            default:
-                break;
+            $result = implode(' ', array_map('ucfirst', explode(' ', $result)));
+        }
+        elseif ($options & self::CAPITALIZE_FIRST)
+        {
+            $result = ucfirst($result);
         }
         
         // 결과를 반환한다.
