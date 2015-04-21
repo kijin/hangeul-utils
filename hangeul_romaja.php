@@ -38,7 +38,7 @@ class Hangeul_Romaja
     const CAPITALIZE_NONE = 4;
     const CAPITALIZE_FIRST = 8;
     const CAPITALIZE_WORDS = 16;
-    const SPELL_NUMBERS = 32;
+    const PRONOUNCE_NUMBERS = 32;
     
     // 주어진 한글 단어 또는 문장을 로마자로 변환한다.
     
@@ -124,10 +124,10 @@ class Hangeul_Romaja
         $result = array();
         for ($i = 0; $i < $parts_count; $i++)
         {
-            $type = $parts[$i][0];
+            $parttype = $parts[$i][0];
             $part = $parts[$i][1];
             
-            switch ($type)
+            switch ($parttype)
             {
                 case 1:
                     $result[] = self::$charmap1[$part];
@@ -143,7 +143,7 @@ class Hangeul_Romaja
                         $nextpart = $parts[$i + 1];
                         if ($nextpart[0] === 1)
                         {
-                            $newparts = self::transform($part, $nextpart[1], $type);
+                            $newparts = self::transform($part, $nextpart[1], $parttype);
                             $part = $newparts[0];
                             $parts[$i + 1][1] = $newparts[1];
                         }
@@ -161,6 +161,28 @@ class Hangeul_Romaja
         $result = implode('', $result);
         $result = str_replace(array('kkk', 'ttt', 'ppp'), array('kk', 'tt', 'pp'), $result);
         $result = preg_replace('/\s+/', ' ', $result);
+        
+        // 숫자 발음표현 처리를 거친다.
+        
+        if ($options & self::PRONOUNCE_NUMBERS)
+        {
+            if ($type === self::TYPE_ADDRESS)
+            {
+                $result = explode(', ', $result);
+                foreach ($result as $i => $word)
+                {
+                    if (preg_match('/[a-z]/i', $word))
+                    {
+                        $result[$i] = preg_replace_callback('/[0-9]+/', array(__CLASS__, 'conv_number'), $word);
+                    }
+                }
+                $result = implode(', ', $result);
+            }
+            else
+            {
+                $result = preg_replace_callback('/[0-9]+/', array(__CLASS__, 'conv_number'), $result);
+            }
+        }
         
         // 대문자 처리를 거친다.
         
@@ -190,6 +212,24 @@ class Hangeul_Romaja
         {
             return '-' . self::convert($matches[2]);
         }
+    }
+    
+    // 숫자 발음표현을 처리한다.
+    
+    protected static function conv_number($matches)
+    {
+        $number = strval(intval($matches[0]));
+        $pronounced = '';
+        $largest_place = strlen($number) - 1;
+        for ($i = 0; $i <= $largest_place; $i++)
+        {
+            $digit = self::$numbers_pronunciation['digits'][intval($number[$i])];
+            $place = self::$numbers_pronunciation['places'][$largest_place - $i];
+            if ($digit === '일' && $place !== '') $digit = '';
+            if ($digit !== '영') $pronounced .= ($digit . $place);
+        }
+        $pronounced = self::convert($pronounced);
+        return "$number($pronounced)";
     }
     
     // 자음 동화를 처리한다.
@@ -225,6 +265,13 @@ class Hangeul_Romaja
         return $result;
     }
     
+    // 숫자 발음표현 목록.
+    
+    protected static $numbers_pronunciation = array(
+        'digits' => array('영', '일', '이', '삼', '사', '오', '육', '칠', '팔', '구'),
+        'places' => array('', '십', '백', '천', '만'),
+    );
+        
     // 자음 동화 목록 (항상 적용).
     
     protected static $transforms_always = array(
