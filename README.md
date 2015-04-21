@@ -36,6 +36,16 @@ Hangeul_Romaja
     $str = Hangeul_Romaja::convert('서울 종로5가 123-4', Hangeul_Romaja::TYPE_ADDRESS);
     echo $str;  // 123-4, Jongno 5-ga, Seoul
 
+그 밖의 옵션들은 세 번째 인자에 넣으면 됩니다.
+
+  - `Hangeul_Romaja::CAPITALIZE_FIRST` : 첫 글자를 대문자로 바꿉니다.
+  - `Hangeul_Romaja::CAPITALIZE_WORDS` : 각 단어의 첫 글자를 대문자로 바꿉니다.
+  - `Hangeul_Romaja::PRONOUNCE_NUMBERS` : 숫자에 해당하는 발음을 로마자로 표시하여 괄호 안에 병기합니다.
+
+두 가지 이상의 옵션을 사용하려면 bitwise OR 연산자로 조합하면 됩니다.
+
+    Hangeul_Romaja::CAPITALIZE_WORDS | Hangeul_Romaja::PRONOUNCE_NUMBERS
+
 흔하지 않은 경우의 자음동화는 적용되지 않을 수 있으며,
 이런 사례를 신고해 주시면 고쳐 드리겠습니다.
 
